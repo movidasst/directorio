@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Directorio - La Movida de SST</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- PapaParse -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        
+        /* Scrollbar refinado */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Animaciones Suaves */
+        .pro-card {
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid #f1f5f9;
+        }
+        .pro-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border-color: #bbf7d0; /* Verde suave al hover */
+        }
+
+        /* Modal Transitions */
+        .modal-enter { opacity: 0; transform: scale(0.95) translateY(10px); }
+        .modal-enter-active { opacity: 1; transform: scale(1) translateY(0); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .modal-exit { opacity: 1; transform: scale(1); }
+        .modal-exit-active { opacity: 0; transform: scale(0.95); transition: all 0.2s ease-in; }
+
+        /* Branding Colors */
+        .bg-brand { background-color: #00b050; }
+        .text-brand { color: #00b050; }
+        .border-brand { border-color: #00b050; }
+        .hover-bg-brand-dark:hover { background-color: #008f41; }
+        
+        /* Marca de agua rotada */
+        .watermark-bg {
+            background-image: url('https://assets.poap.xyz/600dd07c-7b41-43f1-958e-39d5276b090e.png');
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: 70%;
+            opacity: 0.15;
+            mix-blend-mode: multiply;
+        }
+
+        /* Patrón sutil para el header del modal */
+        .pattern-bg {
+            background-image: radial-gradient(rgba(255, 255, 255, 0.15) 1px, transparent 1px);
+            background-size: 16px 16px;
+        }
+    </style>
+</head>
+<body class="text-slate-800 h-screen flex flex-col overflow-hidden selection:bg-green-100 selection:text-green-900">
+
+    <!-- ENCABEZADO DE MARCA -->
+    <header class="bg-white border-b border-slate-200 z-40 relative shadow-sm flex-shrink-0">
+        <div class="max-w-7xl mx-auto px-4 md:px-8 py-3">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                
+                <!-- Identidad -->
+                <div class="flex items-center gap-4 w-full md:w-auto">
+                    <a href="https://www.movidasst.com" target="_blank" class="flex-shrink-0 hover:opacity-90 transition-opacity">
+                        <img src="https://assets.poap.xyz/f7d50791-1f25-47f7-978c-b2c9fd7ad13d.png" alt="Logo Movida SST" class="w-14 h-14 object-contain drop-shadow-sm">
+                    </a>
+                    <div class="flex flex-col">
+                        <h1 class="text-lg md:text-xl font-extrabold text-slate-900 leading-tight tracking-tight">
+                            La Movida de SST <span class="text-brand">DAO Network</span>
+                        </h1>
+                        <p class="text-xs font-medium text-slate-500 uppercase tracking-wider mb-0.5">De la Reacción a la Prevención</p>
+                        <a href="https://www.movidasst.com" target="_blank" class="text-[11px] text-brand hover:text-green-700 font-semibold hover:underline inline-flex items-center gap-1">
+                            www.movidasst.com
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Acciones y Estadísticas -->
+                <div class="flex items-center gap-4 md:gap-6 w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 border-slate-100 pt-3 md:pt-0">
+                    
+                    <!-- Indicador de Estado -->
+                    <div class="hidden lg:flex items-center gap-2 border-r border-slate-200 pr-4 mr-2">
+                        <span id="status-dot" class="w-2 h-2 rounded-full bg-slate-300"></span>
+                        <span id="status-text" class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Desconectado</span>
+                    </div>
+
+                    <div class="flex gap-6 text-sm text-slate-500 md:border-r border-slate-200 md:pr-6">
+                        <div class="text-center">
+                            <span id="stat-total" class="block font-bold text-slate-900 text-lg leading-none">0</span>
+                            <span class="text-[10px] uppercase font-bold tracking-wider text-slate-400">Miembros</span>
+                        </div>
+                        <div class="text-center">
+                            <span id="stat-countries" class="block font-bold text-slate-900 text-lg leading-none">0</span>
+                            <span class="text-[10px] uppercase font-bold tracking-wider text-slate-400">Países</span>
+                        </div>
+                    </div>
+                    
+                    <button onclick="loadFromURL(LIVE_SHEET_URL)" class="flex items-center gap-2 bg-slate-50 hover:bg-brand hover:text-white text-slate-600 border border-slate-200 hover:border-brand px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-all shadow-sm active:scale-95 group">
+                        <svg class="w-4 h-4 group-hover:rotate-180 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        <span class="hidden sm:inline">Sincronizar</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- BARRA DE TÍTULO Y FILTROS -->
+    <div class="bg-slate-50/80 border-b border-slate-200 z-30 sticky top-0 backdrop-blur-md flex-shrink-0">
+        <div class="bg-white border-b border-slate-100 py-3 px-4 text-center md:text-left shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+            <div class="max-w-7xl mx-auto">
+                <h2 class="text-lg md:text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2 justify-center md:justify-start">
+                    <svg class="w-5 h-5 text-brand hidden md:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                    Directorio de Profesionales de Seguridad y Salud en el Trabajo
+                </h2>
+            </div>
+        </div>
+
+        <div class="max-w-7xl mx-auto px-4 md:px-8 py-3">
+            <div class="flex flex-col md:flex-row gap-3">
+                <div class="relative flex-grow md:flex-grow-[2]">
+                    <svg class="absolute left-3.5 top-2.5 h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    <input type="text" id="searchInput" placeholder="Buscar por nombre, especialidad o ciudad..." class="pl-11 w-full py-2 bg-white border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all shadow-sm text-slate-700">
+                </div>
+                
+                <div class="flex gap-2 flex-grow md:flex-grow-0 overflow-x-auto pb-1 md:pb-0 scrollbar-hide">
+                    <select id="countryFilter" class="w-36 py-2 px-3 bg-white border border-slate-300 rounded-lg text-sm font-medium text-slate-700 focus:ring-2 focus:ring-green-500 outline-none cursor-pointer shadow-sm">
+                        <option value="Todos">País: Todos</option>
+                    </select>
+                    <select id="stateFilter" class="w-36 py-2 px-3 bg-white border border-slate-300 rounded-lg text-sm font-medium text-slate-700 focus:ring-2 focus:ring-green-500 outline-none cursor-pointer shadow-sm">
+                        <option value="Todos">Estado: Todos</option>
+                    </select>
+                    <select id="specialtyFilter" class="w-44 py-2 px-3 bg-white border border-slate-300 rounded-lg text-sm font-medium text-slate-700 focus:ring-2 focus:ring-green-500 outline-none cursor-pointer shadow-sm">
+                        <option value="Todos">Profesión: Todas</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GRID PRINCIPAL DE CONTENIDO -->
+    <main class="flex-1 overflow-y-auto bg-slate-50 p-4 md:p-8 relative">
+        <div class="max-w-7xl mx-auto pb-16"> 
+            
+            <!-- BANNER CALL TO ACTION -->
+            <div class="mb-8 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-100 rounded-2xl p-5 flex flex-col md:flex-row items-center justify-between gap-5 shadow-sm relative overflow-hidden group">
+                <div class="absolute right-0 top-0 w-32 h-32 bg-green-100 rounded-full blur-3xl opacity-50 transform translate-x-10 -translate-y-10 pointer-events-none"></div>
+                
+                <div class="flex items-center gap-5 relative z-10 text-center md:text-left">
+                    <div class="bg-white p-3.5 rounded-full shadow-sm border border-green-50 text-brand hidden md:block group-hover:scale-110 transition-transform duration-300">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800">¿Deseas pertenecer a la comunidad y aparecer en este directorio?</h3>
+                        <p class="text-slate-600 text-sm mt-1 leading-relaxed">Únete a nuestro ecosistema digital y accede a nuestros grupos exclusivos en el <span class="font-semibold text-brand">Portal de Integrantes</span>.</p>
+                    </div>
+                </div>
+                <a href="https://portal.movidasst.com/" target="_blank" class="w-full md:w-auto whitespace-nowrap bg-brand text-white px-8 py-3 rounded-xl text-sm font-bold hover-bg-brand-dark transition-all shadow-lg shadow-green-200 hover:shadow-xl hover:-translate-y-0.5 flex items-center justify-center gap-2 relative z-10">
+                    Unirse al Portal
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                </a>
+            </div>
+
+            <!-- Contenedor de Tarjetas -->
+            <div id="gridContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <!-- Las tarjetas se inyectan aquí vía JS -->
+            </div>
+            
+            <!-- BOTÓN CARGAR MÁS (Paginación) -->
+            <div id="loadMoreContainer" class="mt-8 flex justify-center hidden">
+                <button id="loadMoreBtn" class="bg-white text-slate-600 border border-slate-200 hover:border-brand hover:text-brand px-6 py-2.5 rounded-full text-sm font-semibold shadow-sm transition-all active:scale-95 flex items-center gap-2">
+                    Mostrar más profesionales
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
+            </div>
+            
+            <!-- Estado Vacío con Feedback Inteligente -->
+            <div id="emptyState" class="hidden flex flex-col items-center justify-center py-24 text-slate-400">
+                <div class="bg-white p-6 rounded-full mb-4 shadow-sm border border-slate-100">
+                    <svg class="w-12 h-12 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </div>
+                <p class="text-xl font-semibold text-slate-600">No hay resultados</p>
+                <p id="emptyStateSuggestion" class="text-sm mt-2 text-slate-500 bg-slate-100 px-4 py-1.5 rounded-full">Intenta cambiar los filtros de búsqueda</p>
+            </div>
+
+            <!-- Loader -->
+            <div id="loader" class="absolute inset-0 z-50 bg-white/80 backdrop-blur-md flex flex-col gap-4 items-center justify-center transition-opacity duration-300">
+                <div class="w-14 h-14 border-4 border-green-100 border-t-brand rounded-full animate-spin shadow-lg"></div>
+                <p class="text-sm font-bold text-slate-500 uppercase tracking-widest animate-pulse">Cargando Directorio...</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-white border-t border-slate-200 py-3 flex-shrink-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center text-[11px] text-slate-500 gap-2">
+            <div class="flex items-center gap-1">
+                <span>© 2024 La Movida de SST</span>
+                <span class="text-slate-300">|</span>
+                <span class="font-medium text-brand">De la Reacción a la Prevención</span>
+            </div>
+            <div class="flex items-center gap-1">
+                <span>Elaborado por <span class="font-bold text-slate-700">David Linares Brea</span></span>
+                <span class="text-slate-300">•</span>
+                <a href="mailto:movidasst@gmail.com" class="text-brand hover:underline font-medium flex items-center gap-1">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                    movidasst@gmail.com
+                </a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- MODAL DETALLE PRO -->
+    <div id="modalBackdrop" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 opacity-0 transition-all duration-300" onclick="closeModal()">
+        <!-- Tarjeta Modal -->
+        <div id="modalContent" class="bg-white rounded-2xl shadow-2xl w-full max-w-md transform scale-95 transition-all duration-300 overflow-hidden relative border border-slate-200/50" onclick="event.stopPropagation()">
+            
+            <!-- Marca de agua (Watermark) -->
+            <div class="absolute inset-0 pointer-events-none z-0 watermark-bg transform rotate-12 scale-125 translate-y-10"></div>
+
+            <!-- Header con Patrón -->
+            <div class="h-36 bg-brand pattern-bg relative z-10 overflow-hidden">
+                <div class="absolute -top-10 -right-10 w-40 h-40 bg-white opacity-10 rounded-full blur-2xl"></div>
+                <div class="absolute top-10 left-10 w-20 h-20 bg-white opacity-5 rounded-full blur-xl"></div>
+
+                <button onclick="closeModal()" class="absolute top-4 right-4 bg-black/20 hover:bg-black/40 text-white rounded-full p-2 transition-all hover:scale-110 focus:outline-none z-20 backdrop-blur-sm" aria-label="Cerrar modal">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <!-- Avatar Flotante -->
+            <div class="relative z-20 -mt-16 flex justify-center">
+                 <div id="modalAvatarContainer" class="w-32 h-32 rounded-2xl border-[6px] border-white shadow-xl bg-white overflow-hidden transform transition-transform hover:scale-105">
+                     <!-- Injected via JS -->
+                 </div>
+            </div>
+
+            <!-- Cuerpo del Modal -->
+            <div class="pt-4 px-8 pb-8 relative z-10 text-center">
+                <h3 class="text-xs font-extrabold text-brand/80 uppercase tracking-[0.2em] mb-1">Profesional de SST</h3>
+                <h2 id="modalName" class="text-2xl font-bold text-slate-900 leading-tight mb-2">Nombre</h2>
+                
+                <div class="flex items-center justify-center gap-2 mb-6">
+                    <span id="modalStatus" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-green-50 text-brand border border-green-100 tracking-wider shadow-sm">Activo</span>
+                </div>
+
+                <div class="bg-white/80 backdrop-blur-sm p-5 rounded-xl border border-slate-100 shadow-sm space-y-4">
+                    <div>
+                        <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Profesión</h3>
+                        <p id="modalProfession" class="text-lg font-bold text-slate-700 leading-tight">Especialidad</p>
+                    </div>
+                    <div class="h-px bg-slate-100 w-full"></div>
+                    <div>
+                        <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Ubicación</h3>
+                        <div class="flex items-center justify-center gap-1.5 text-slate-600">
+                            <svg class="w-4 h-4 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                            <span id="modalLocation" class="text-sm font-medium">Ciudad, País</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8">
+                    <a id="modalEmailBtn" href="#" target="_blank" class="group relative flex items-center justify-center gap-3 bg-brand text-white px-6 py-3.5 rounded-xl font-bold text-sm hover-bg-brand-dark transition-all shadow-lg shadow-green-200 hover:shadow-xl hover:-translate-y-0.5 overflow-hidden">
+                        <div class="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500 transform skew-x-12"></div>
+                        <svg class="w-5 h-5 text-white group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                        </svg>
+                        <span>Contactar por Correo</span>
+                    </a>
+                    <p id="modalNoEmail" class="text-center text-xs text-slate-400 mt-3 hidden">Este perfil no tiene correo público</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOGIC -->
+    <script>
+        const LIVE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1HDcqEGnp2HfxrBIxggnvMpYw6slAtOspbDZ6_o6heBA/export?format=csv';
+
+        let allData = [];
+        let filteredData = [];
+        
+        // --- VARIABLES PARA PAGINACIÓN ---
+        let displayedCount = 20;
+        const LOAD_STEP = 20;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFromURL(LIVE_SHEET_URL);
+            
+            document.getElementById('searchInput').addEventListener('input', applyFilters);
+            document.getElementById('countryFilter').addEventListener('change', handleCountryChange);
+            document.getElementById('stateFilter').addEventListener('change', applyFilters);
+            document.getElementById('specialtyFilter').addEventListener('change', applyFilters);
+            
+            // Listener Botón Cargar Más
+            document.getElementById('loadMoreBtn').addEventListener('click', () => {
+                displayedCount += LOAD_STEP;
+                renderGrid();
+            });
+        });
+
+        function loadFromURL(url) {
+            const loader = document.getElementById('loader');
+            const statusText = document.getElementById('status-text');
+            const statusDot = document.getElementById('status-dot');
+            
+            if(loader) loader.classList.remove('hidden');
+            if(statusText) {
+                statusText.textContent = "Conectando...";
+                statusText.classList.remove('text-brand');
+                statusText.classList.add('text-slate-400');
+            }
+            
+            Papa.parse(url, {
+                download: true,
+                header: true,
+                skipEmptyLines: true,
+                complete: (results) => {
+                    processParsedData(results.data);
+                    if(loader) loader.classList.add('hidden');
+                    
+                    if(statusText) {
+                        statusText.textContent = "En línea";
+                        statusText.classList.remove('text-slate-400');
+                        statusText.classList.add('text-brand');
+                    }
+                    if(statusDot) {
+                        statusDot.classList.remove('bg-slate-300');
+                        statusDot.classList.add('bg-brand', 'animate-pulse');
+                    }
+                    
+                    if(document.getElementById('stat-total')) {
+                        document.getElementById('stat-total').textContent = results.data.length;
+                    }
+                    if(document.getElementById('stat-countries')) {
+                        const countries = new Set(results.data.map(d => d.pais).filter(Boolean)).size;
+                        document.getElementById('stat-countries').textContent = countries;
+                    }
+                },
+                error: (err) => {
+                    console.error("Error:", err);
+                    if(loader) {
+                        loader.innerHTML = `<div class="text-red-500 font-bold text-center p-4 bg-white rounded-xl shadow-xl border border-red-100">Error de conexión.<br><span class="text-sm font-normal text-black">Verifica tu internet.</span></div>`;
+                    }
+                }
+            });
+        }
+
+        function processParsedData(rawData) {
+            allData = rawData.map((item, index) => {
+                let rawPhoto = item.foto || item.foto_url || '';
+                let driveId = null;
+                let cleanPhotoUrl = rawPhoto; 
+
+                if (rawPhoto && rawPhoto.includes('drive.google.com')) {
+                    const idMatch = rawPhoto.match(/(?:id=|\/d\/)([a-zA-Z0-9_-]+)/);
+                    if (idMatch && idMatch[1]) {
+                        driveId = idMatch[1];
+                        cleanPhotoUrl = `https://drive.google.com/thumbnail?id=${driveId}&sz=w400`;
+                    }
+                }
+
+                const cleanEmail = item.email ? item.email.trim() : '';
+
+                return {
+                    ...item,
+                    id: item.id || `row-${index}`,
+                    nombre: item.nombre || 'Profesional',
+                    profesion: item.profesion || item.especialidad || 'General',
+                    pais: item.pais || 'Desconocido',
+                    estado: item.estado === 'Nan' ? '' : item.estado,
+                    foto_url: cleanPhotoUrl,
+                    status: item.status || item.Status || 'Activo',
+                    drive_id: driveId,
+                    email: cleanEmail
+                };
+            });
+
+            updateDropdowns();
+            applyFilters();
+        }
+
+        function updateDropdowns() {
+            const countries = [...new Set(allData.map(d => d.pais).filter(Boolean))].sort();
+            const countrySelect = document.getElementById('countryFilter');
+            if(countrySelect) {
+                countrySelect.innerHTML = '<option value="Todos">País: Todos</option>';
+                countries.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c; opt.textContent = c;
+                    countrySelect.appendChild(opt);
+                });
+            }
+
+            const professions = [...new Set(allData.map(d => d.profesion).filter(Boolean))].sort();
+            const specialtySelect = document.getElementById('specialtyFilter');
+            if(specialtySelect) {
+                specialtySelect.innerHTML = '<option value="Todos">Profesión: Todas</option>';
+                professions.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p; 
+                    opt.textContent = p.length > 30 ? p.substring(0, 30) + '...' : p;
+                    specialtySelect.appendChild(opt);
+                });
+            }
+
+            populateStateDropdown(allData);
+        }
+
+        function populateStateDropdown(dataSet) {
+            const states = [...new Set(dataSet.map(d => d.estado).filter(s => s && s !== 'Nan'))].sort();
+            const stateSelect = document.getElementById('stateFilter');
+            if(stateSelect) {
+                stateSelect.innerHTML = '<option value="Todos">Estado: Todos</option>';
+                states.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s; opt.textContent = s;
+                    stateSelect.appendChild(opt);
+                });
+            }
+        }
+
+        function handleCountryChange() {
+            const country = document.getElementById('countryFilter').value;
+            const filteredByCountry = country === 'Todos' ? allData : allData.filter(d => d.pais === country);
+            populateStateDropdown(filteredByCountry);
+            applyFilters();
+        }
+
+        function applyFilters() {
+            // Resetear paginación al filtrar
+            displayedCount = 20; 
+            
+            const term = document.getElementById('searchInput').value.toLowerCase();
+            const country = document.getElementById('countryFilter').value;
+            const state = document.getElementById('stateFilter').value;
+            const profession = document.getElementById('specialtyFilter').value;
+
+            filteredData = allData.filter(item => {
+                const matchesTerm = (item.nombre && item.nombre.toLowerCase().includes(term)) || 
+                                    (item.profesion && item.profesion.toLowerCase().includes(term)) ||
+                                    (item.pais && item.pais.toLowerCase().includes(term));
+                const matchesCountry = country === 'Todos' || item.pais === country;
+                const matchesState = state === 'Todos' || item.estado === state;
+                const matchesProf = profession === 'Todos' || item.profesion === profession;
+                return matchesTerm && matchesCountry && matchesState && matchesProf;
+            });
+
+            renderGrid();
+        }
+
+        function getInitials(name) {
+            if (!name) return '??';
+            return name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+        }
+
+        window.handleImgError = function(img, driveId) {
+            if (!driveId) return fallbackToInitials(img);
+            if (!img.dataset.tryLh3) {
+                img.dataset.tryLh3 = "true";
+                img.src = `https://lh3.googleusercontent.com/d/${driveId}=s400`;
+                return;
+            }
+            if (!img.dataset.tryExport) {
+                img.dataset.tryExport = "true";
+                img.src = `https://drive.google.com/uc?export=view&id=${driveId}`;
+                return;
+            }
+            fallbackToInitials(img);
+        }
+
+        function fallbackToInitials(img) {
+            const parent = img.parentElement;
+            const name = img.getAttribute('alt') || 'User';
+            parent.innerHTML = `<div class="w-full h-full bg-slate-100 text-slate-400 flex items-center justify-center font-bold text-2xl md:text-4xl">${getInitials(name)}</div>`;
+        }
+
+        function renderGrid() {
+            const grid = document.getElementById('gridContainer');
+            const emptyState = document.getElementById('emptyState');
+            const loadMoreContainer = document.getElementById('loadMoreContainer');
+            const suggestionText = document.getElementById('emptyStateSuggestion');
+            
+            if(grid) grid.innerHTML = '';
+            
+            // --- FEEDBACK INTELIGENTE ---
+            if (!filteredData || filteredData.length === 0) {
+                if(emptyState) emptyState.classList.remove('hidden');
+                if(loadMoreContainer) loadMoreContainer.classList.add('hidden');
+                
+                // Lógica de sugerencias
+                const country = document.getElementById('countryFilter').value;
+                if (country !== 'Todos') {
+                    suggestionText.textContent = `No hay resultados en ${country}. Intenta seleccionar "Todos" en país.`;
+                } else {
+                    suggestionText.textContent = "Intenta cambiar o borrar los filtros de búsqueda.";
+                }
+                return;
+            }
+            if(emptyState) emptyState.classList.add('hidden');
+
+            // --- PAGINACIÓN (SLICING) ---
+            const visibleData = filteredData.slice(0, displayedCount);
+            
+            visibleData.forEach(user => {
+                const locationStr = [user.estado, user.pais].filter(Boolean).join(', ');
+                const driveIdStr = user.drive_id ? `'${user.drive_id}'` : 'null';
+                
+                const card = document.createElement('div');
+                card.className = 'pro-card bg-white rounded-2xl p-6 flex flex-col items-center text-center cursor-pointer group relative overflow-hidden shadow-sm hover:shadow-md';
+                card.onclick = () => openModal(user);
+
+                const avatarHtml = `
+                    <div class="w-24 h-24 mb-4 relative">
+                        <div class="w-full h-full rounded-2xl overflow-hidden shadow-sm bg-slate-50 border-2 border-white ring-1 ring-slate-100">
+                            ${user.foto_url 
+                                ? `<img src="${user.foto_url}" alt="${user.nombre}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy" referrerpolicy="no-referrer" onerror="handleImgError(this, ${driveIdStr})">`
+                                : `<div class="w-full h-full bg-slate-100 text-slate-400 flex items-center justify-center font-bold text-xl">${getInitials(user.nombre)}</div>`
+                            }
+                        </div>
+                        <div class="absolute -bottom-1 -right-1 w-5 h-5 bg-brand border-[3px] border-white rounded-full shadow-sm" title="Verificado"></div>
+                    </div>
+                `;
+
+                card.innerHTML = `
+                    ${avatarHtml}
+                    <h3 class="text-slate-900 font-bold text-lg leading-tight line-clamp-1 group-hover:text-brand transition-colors">${user.nombre}</h3>
+                    <p class="text-xs font-bold text-brand uppercase tracking-wide mt-1 mb-3 line-clamp-1 bg-green-50 px-2 py-0.5 rounded-md">${user.profesion}</p>
+                    
+                    <div class="mt-auto w-full pt-4 border-t border-slate-50 flex items-center justify-center gap-1.5 text-slate-500 text-xs font-medium">
+                        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        <span class="truncate max-w-[180px]">${locationStr}</span>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+
+            // Controlar visibilidad del botón "Cargar Más"
+            if (filteredData.length > displayedCount) {
+                loadMoreContainer.classList.remove('hidden');
+            } else {
+                loadMoreContainer.classList.add('hidden');
+            }
+        }
+
+        function openModal(user) {
+            const backdrop = document.getElementById('modalBackdrop');
+            const content = document.getElementById('modalContent');
+            const driveIdStr = user.drive_id ? `'${user.drive_id}'` : 'null';
+
+            if(document.getElementById('modalName')) document.getElementById('modalName').textContent = user.nombre;
+            if(document.getElementById('modalProfession')) document.getElementById('modalProfession').textContent = user.profesion;
+            if(document.getElementById('modalLocation')) document.getElementById('modalLocation').textContent = [user.estado, user.pais].filter(Boolean).join(', ');
+            if(document.getElementById('modalStatus')) document.getElementById('modalStatus').textContent = user.status;
+            
+            const emailBtn = document.getElementById('modalEmailBtn');
+            const noEmailMsg = document.getElementById('modalNoEmail');
+            
+            if (user.email && user.email.length > 3) {
+                if(emailBtn) {
+                    emailBtn.href = `mailto:${user.email}`;
+                    emailBtn.classList.remove('hidden');
+                    emailBtn.classList.add('flex');
+                }
+                if(noEmailMsg) noEmailMsg.classList.add('hidden');
+            } else {
+                if(emailBtn) {
+                    emailBtn.classList.add('hidden');
+                    emailBtn.classList.remove('flex');
+                }
+                if(noEmailMsg) noEmailMsg.classList.remove('hidden');
+            }
+
+            const avatarContainer = document.getElementById('modalAvatarContainer');
+            if(avatarContainer) {
+                avatarContainer.innerHTML = user.foto_url 
+                     ? `<img src="${user.foto_url}" class="w-full h-full object-cover" referrerpolicy="no-referrer" onerror="handleImgError(this, ${driveIdStr})">`
+                     : `<div class="w-full h-full bg-slate-100 text-slate-400 flex items-center justify-center font-bold text-4xl">${getInitials(user.nombre)}</div>`;
+            }
+
+            backdrop.classList.remove('hidden');
+            setTimeout(() => {
+                backdrop.classList.remove('opacity-0');
+                backdrop.classList.add('modal-enter-active');
+                content.classList.remove('scale-95');
+                content.classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeModal() {
+            const backdrop = document.getElementById('modalBackdrop');
+            const content = document.getElementById('modalContent');
+            
+            backdrop.classList.remove('modal-enter-active');
+            backdrop.classList.add('opacity-0');
+            content.classList.remove('scale-100');
+            content.classList.add('scale-95');
+
+            setTimeout(() => {
+                backdrop.classList.add('hidden');
+            }, 200);
+        }
+    </script>
+</body>
+</html>
