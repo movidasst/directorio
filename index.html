@@ -10,7 +10,7 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
-    <!-- PapaParse -->
+    <!-- PapaParse for CSV handling -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
     <style>
@@ -283,6 +283,58 @@
         </div>
     </div>
 
+    <!-- ======================================================= -->
+    <!-- BOTÓN FLOTANTE ESTILO DAO: VOLVER AL HUB (MOVIDASST.COM) -->
+    <!-- ======================================================= -->
+
+    <a href="https://www.movidasst.com" 
+       title="Volver al Hub Principal"
+       style="
+         position: fixed; 
+         bottom: 20px; 
+         right: 20px; 
+         background-color: #0f172a; /* Fondo Oscuro (Slate 900) */
+         color: #00b050;            /* Texto Verde Neón */
+         padding: 8px 16px;         /* Más pequeño */
+         border-radius: 8px;        /* Bordes técnicos */
+         text-decoration: none; 
+         font-family: 'Outfit', sans-serif, monospace; 
+         font-weight: 700; 
+         font-size: 12px;           /* Letra más pequeña */
+         letter-spacing: 0.5px;
+         border: 1px solid #00b050; /* Borde Verde Fino */
+         box-shadow: 0 0 10px rgba(0, 176, 80, 0.2); 
+         z-index: 9999; 
+         display: flex; 
+         align-items: center; 
+         gap: 8px; 
+         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+         backdrop-filter: blur(5px);
+       "
+       onmouseover="
+         this.style.transform='translateY(-2px)'; 
+         this.style.boxShadow='0 0 20px rgba(0, 176, 80, 0.5)'; 
+         this.style.backgroundColor='#00b050'; 
+         this.style.color='#ffffff';
+       " 
+       onmouseout="
+         this.style.transform='translateY(0)'; 
+         this.style.boxShadow='0 0 10px rgba(0, 176, 80, 0.2)'; 
+         this.style.backgroundColor='#0f172a'; 
+         this.style.color='#00b050';
+       "
+    >
+        <!-- Icono Hexágono/Nodo Pequeño -->
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+            <polyline points="7.5 4.21 12 12 16.5 4.21"></polyline>
+            <polyline points="7.5 19.79 12 12 16.5 19.79"></polyline>
+            <polyline points="3.29 12 12 12 20.71 12"></polyline>
+        </svg>
+        
+        <span>VOLVER</span>
+    </a>
+
     <!-- LOGIC -->
     <script>
         const LIVE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1HDcqEGnp2HfxrBIxggnvMpYw6slAtOspbDZ6_o6heBA/export?format=csv';
@@ -297,16 +349,26 @@
         document.addEventListener('DOMContentLoaded', () => {
             loadFromURL(LIVE_SHEET_URL);
             
-            document.getElementById('searchInput').addEventListener('input', applyFilters);
-            document.getElementById('countryFilter').addEventListener('change', handleCountryChange);
-            document.getElementById('stateFilter').addEventListener('change', applyFilters);
-            document.getElementById('specialtyFilter').addEventListener('change', applyFilters);
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) searchInput.addEventListener('input', applyFilters);
+
+            const countryFilter = document.getElementById('countryFilter');
+            if (countryFilter) countryFilter.addEventListener('change', handleCountryChange);
+
+            const stateFilter = document.getElementById('stateFilter');
+            if (stateFilter) stateFilter.addEventListener('change', applyFilters);
+
+            const specialtyFilter = document.getElementById('specialtyFilter');
+            if (specialtyFilter) specialtyFilter.addEventListener('change', applyFilters);
             
             // Listener Botón Cargar Más
-            document.getElementById('loadMoreBtn').addEventListener('click', () => {
-                displayedCount += LOAD_STEP;
-                renderGrid();
-            });
+            const loadMoreBtn = document.getElementById('loadMoreBtn');
+            if (loadMoreBtn) {
+                loadMoreBtn.addEventListener('click', () => {
+                    displayedCount += LOAD_STEP;
+                    renderGrid();
+                });
+            }
         });
 
         function loadFromURL(url) {
@@ -441,10 +503,17 @@
             // Resetear paginación al filtrar
             displayedCount = 20; 
             
-            const term = document.getElementById('searchInput').value.toLowerCase();
-            const country = document.getElementById('countryFilter').value;
-            const state = document.getElementById('stateFilter').value;
-            const profession = document.getElementById('specialtyFilter').value;
+            const termInput = document.getElementById('searchInput');
+            const term = termInput ? termInput.value.toLowerCase() : '';
+            
+            const countryInput = document.getElementById('countryFilter');
+            const country = countryInput ? countryInput.value : 'Todos';
+            
+            const stateInput = document.getElementById('stateFilter');
+            const state = stateInput ? stateInput.value : 'Todos';
+            
+            const professionInput = document.getElementById('specialtyFilter');
+            const profession = professionInput ? professionInput.value : 'Todos';
 
             filteredData = allData.filter(item => {
                 const matchesTerm = (item.nombre && item.nombre.toLowerCase().includes(term)) || 
@@ -487,11 +556,13 @@
 
         function renderGrid() {
             const grid = document.getElementById('gridContainer');
+            if (!grid) return;
+
             const emptyState = document.getElementById('emptyState');
             const loadMoreContainer = document.getElementById('loadMoreContainer');
             const suggestionText = document.getElementById('emptyStateSuggestion');
             
-            if(grid) grid.innerHTML = '';
+            grid.innerHTML = '';
             
             // --- FEEDBACK INTELIGENTE ---
             if (!filteredData || filteredData.length === 0) {
@@ -499,9 +570,9 @@
                 if(loadMoreContainer) loadMoreContainer.classList.add('hidden');
                 
                 // Lógica de sugerencias
-                const country = document.getElementById('countryFilter').value;
-                if (country !== 'Todos') {
-                    suggestionText.textContent = `No hay resultados en ${country}. Intenta seleccionar "Todos" en país.`;
+                const countryInput = document.getElementById('countryFilter');
+                if (countryInput && countryInput.value !== 'Todos') {
+                    suggestionText.textContent = `No hay resultados en ${countryInput.value}. Intenta seleccionar "Todos" en país.`;
                 } else {
                     suggestionText.textContent = "Intenta cambiar o borrar los filtros de búsqueda.";
                 }
@@ -557,6 +628,8 @@
             const backdrop = document.getElementById('modalBackdrop');
             const content = document.getElementById('modalContent');
             const driveIdStr = user.drive_id ? `'${user.drive_id}'` : 'null';
+            
+            if (!backdrop || !content) return;
 
             if(document.getElementById('modalName')) document.getElementById('modalName').textContent = user.nombre;
             if(document.getElementById('modalProfession')) document.getElementById('modalProfession').textContent = user.profesion;
@@ -600,6 +673,8 @@
         function closeModal() {
             const backdrop = document.getElementById('modalBackdrop');
             const content = document.getElementById('modalContent');
+            
+            if (!backdrop || !content) return;
             
             backdrop.classList.remove('modal-enter-active');
             backdrop.classList.add('opacity-0');
