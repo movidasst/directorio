@@ -33,9 +33,9 @@
     {
       "@context": "https://schema.org",
       "@type": "Organization",
-      "name": "La Movida de SST DAO Network",
+      "name": "La Movida de SST",
       "url": "https://www.movidasst.com",
-      "logo": "https://assets.poap.xyz/7a0347ca-c7eb-4842-b5f5-b72c364b1fff.png",
+      "logo": "https://assets.poap.xyz/8177a96d-b12a-4175-ab07-e28a5ff15962.png",
       "description": "Comunidad y directorio de profesionales de Seguridad y Salud en el Trabajo, enfocados en LOPCYMAT y prevención de riesgos.",
       "areaServed": {
         "@type": "Country",
@@ -50,17 +50,17 @@
     <meta property="og:url" content="https://www.movidasst.com/">
     <meta property="og:title" content="Directorio de Profesionales SST y LOPCYMAT - Venezuela">
     <meta property="og:description" content="Encuentra y conecta con los mejores expertos en prevención de riesgos y seguridad laboral de nuestra comunidad.">
-    <meta property="og:image" content="https://assets.poap.xyz/7a0347ca-c7eb-4842-b5f5-b72c364b1fff.png">
+    <meta property="og:image" content="https://assets.poap.xyz/8177a96d-b12a-4175-ab07-e28a5ff15962.png">
     <meta property="og:locale" content="es_VE">
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="Directorio SST Venezuela - La Movida de SST">
     <meta name="twitter:description" content="Base de datos de profesionales en LOPCYMAT y Seguridad Industrial.">
-    <meta name="twitter:image" content="https://assets.poap.xyz/7a0347ca-c7eb-4842-b5f5-b72c364b1fff.png">
+    <meta name="twitter:image" content="https://assets.poap.xyz/8177a96d-b12a-4175-ab07-e28a5ff15962.png">
 
     <!-- Favicon -->
-    <link rel="icon" type="image/png" href="https://assets.poap.xyz/7a0347ca-c7eb-4842-b5f5-b72c364b1fff.png">
+    <link rel="icon" type="image/png" href="https://assets.poap.xyz/8177a96d-b12a-4175-ab07-e28a5ff15962.png">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -128,15 +128,19 @@
             <div class="flex flex-col md:flex-row justify-between items-center gap-4">
                 
                 <!-- Identidad -->
-                <div class="flex items-center gap-3 w-full md:w-auto">
-                    <a href="https://www.movidasst.com" target="_blank" class="flex-shrink-0 hover:opacity-90 transition-opacity">
-                        <img src="https://assets.poap.xyz/7a0347ca-c7eb-4842-b5f5-b72c364b1fff.png" alt="Logo Movida SST" class="w-16 h-16 md:w-20 md:h-20 object-contain drop-shadow-sm">
+                <div class="flex items-center gap-4 w-full md:w-auto">
+                    <a href="https://www.movidasst.com" target="_blank" class="flex-shrink-0 relative group p-1">
+                        <!-- Efecto glow detrás del logo -->
+                        <div class="absolute inset-0 bg-brand blur-2xl rounded-full opacity-30 group-hover:opacity-60 transition-all duration-500 -z-10 transform group-hover:scale-110"></div>
+                        <img src="https://assets.poap.xyz/8177a96d-b12a-4175-ab07-e28a5ff15962.png" alt="Logo Movida SST" class="w-20 h-20 md:w-28 md:h-28 rounded-full object-cover shadow-xl shadow-brand/20 group-hover:shadow-2xl group-hover:shadow-brand/50 ring-4 ring-white group-hover:ring-green-100 group-hover:scale-105 transition-all duration-500 ease-out">
                     </a>
                     <div class="flex flex-col">
-                        <h1 class="text-lg md:text-xl font-extrabold text-slate-900 leading-none tracking-tight">
-                            La Movida de SST <span class="text-brand">DAO Network</span>
+                        <h1 class="text-xl md:text-2xl font-extrabold text-slate-900 leading-none tracking-tight">
+                            La Movida de <span class="text-brand">SST</span>
                         </h1>
-                        <p class="text-[10px] md:text-xs font-medium text-slate-500 uppercase tracking-widest mt-1">Directorio Oficial</p>
+                        <p class="text-[10px] md:text-[11px] font-bold text-slate-500 uppercase tracking-widest mt-1.5">
+                            De la Reacción a la Prevención
+                        </p>
                     </div>
                 </div>
 
@@ -711,7 +715,7 @@ WhatsApp: ${currentModalUser.whatsapp || 'N/A'}
             try {
                 const successful = document.execCommand('copy');
                 if(successful) showCopySuccess();
-                else alert("No se pudo copiar. Intenta manualmente.");
+                // alert() removal check: no alert here, use message box logic if needed
             } catch (err) {
                 console.error('Fallo fallback', err);
             }
@@ -726,8 +730,6 @@ WhatsApp: ${currentModalUser.whatsapp || 'N/A'}
                 setTimeout(() => {
                     tooltip.classList.add('opacity-0');
                 }, 2000);
-            } else {
-                alert("¡Datos copiados al portapapeles!");
             }
         }
     </script>
