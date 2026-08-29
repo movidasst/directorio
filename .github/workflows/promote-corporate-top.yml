@@ -1,0 +1,43 @@
+name: Promote corporate offer at top
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Add visible corporate header action
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          t=p.read_text(encoding='utf-8')
+          if 'id="corporateHeaderBtn"' not in t:
+              anchor='                    <button onclick="forceSync()" class="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 hover:border-brand hover:text-brand px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-all shadow-sm active:scale-95 group">'
+              if anchor not in t: raise SystemExit('sync button anchor not found')
+              btn='''                    <a id="corporateHeaderBtn" href="https://presupuesto.movidasst.com/" class="flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#00205b] to-[#007b85] px-3 py-2 text-[10px] font-black uppercase tracking-wide text-white shadow-md shadow-cyan-900/10 transition hover:-translate-y-0.5 active:scale-95 sm:text-xs">\n                        <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18"/><path d="M6 21V7l6-4 6 4v14"/></svg>\n                        <span>Empresas</span>\n                    </a>\n\n'''
+              t=t.replace(anchor,btn+anchor,1)
+              p.write_text(t,encoding='utf-8')
+          PY
+      - name: Verify
+        run: |
+          grep -q 'id="corporateHeaderBtn"' index.html
+          grep -q 'https://presupuesto.movidasst.com/' index.html
+      - name: Commit
+        run: |
+          if git diff --quiet -- index.html; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "feat: surface corporate offer in header"
+          git push
