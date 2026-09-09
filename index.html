@@ -495,7 +495,10 @@
                     ...item,
                     id: idx,
                     nombre: item.nombre || 'Profesional',
-                    profesion: item.profesion || 'General',
+                    // Compatibilidad académica con el registro actual
+                    profesion: item.profesion || item.carrera || 'General',
+                    carrera: item.carrera || item.profesion || '',
+                    postgrado: item.postgrado || '',
                     pais: item.pais || 'Desconocido',
                     estado: item.estado || '',
                     foto_url: photo,
@@ -551,7 +554,9 @@
 
             filteredData = allData.filter(item => {
                 const matchTerm = (item.nombre && item.nombre.toLowerCase().includes(term)) || 
-                                  (item.profesion && item.profesion.toLowerCase().includes(term));
+                                  (item.profesion && item.profesion.toLowerCase().includes(term)) ||
+                                  (item.carrera && item.carrera.toLowerCase().includes(term)) ||
+                                  (item.postgrado && item.postgrado.toLowerCase().includes(term));
                 const matchCountry = country === 'Todos' || item.pais === country;
                 const matchState = state === 'Todos' || item.estado === state;
                 const matchProf = prof === 'Todos' || item.profesion === prof;
