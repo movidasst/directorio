@@ -22,33 +22,39 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+          import re
 
           path = Path('index.html')
           text = path.read_text(encoding='utf-8')
 
-          old_normalize = """                    profesion: item.profesion || 'General',
-                    pais: item.pais || 'Desconocido',"""
-          new_normalize = """                    // Compatibilidad académica: acepta tanto el campo histórico `profesion`
-                    // como el campo canónico actual `carrera` proveniente del registro.
-                    profesion: item.profesion || item.carrera || 'General',
-                    carrera: item.carrera || item.profesion || '',
-                    postgrado: item.postgrado || '',
-                    pais: item.pais || 'Desconocido',"""
-          if old_normalize in text:
-              text = text.replace(old_normalize, new_normalize, 1)
-          elif "profesion: item.profesion || item.carrera || 'General'" not in text:
-              raise SystemExit('No se encontró el bloque de normalización esperado')
+          if "profesion: item.profesion || item.carrera || 'General'" not in text:
+              pattern = re.compile(r"(?m)^(?P<i>\s*)profesion:\s*item\.profesion\s*\|\|\s*'General',\s*$")
+              def repl(m):
+                  i = m.group('i')
+                  return (
+                      f"{i}// Compatibilidad académica con el registro actual\n"
+                      f"{i}profesion: item.profesion || item.carrera || 'General',\n"
+                      f"{i}carrera: item.carrera || item.profesion || '',\n"
+                      f"{i}postgrado: item.postgrado || '',"
+                  )
+              text, n = pattern.subn(repl, text, count=1)
+              if n != 1:
+                  raise SystemExit('No se encontró la línea de normalización de profesión')
 
-          old_search = """                const matchTerm = (item.nombre && item.nombre.toLowerCase().includes(term)) || 
-                                  (item.profesion && item.profesion.toLowerCase().includes(term));"""
-          new_search = """                const matchTerm = (item.nombre && item.nombre.toLowerCase().includes(term)) || 
-                                  (item.profesion && item.profesion.toLowerCase().includes(term)) ||
-                                  (item.carrera && item.carrera.toLowerCase().includes(term)) ||
-                                  (item.postgrado && item.postgrado.toLowerCase().includes(term));"""
-          if old_search in text:
-              text = text.replace(old_search, new_search, 1)
-          elif "item.postgrado && item.postgrado.toLowerCase().includes(term)" not in text:
-              raise SystemExit('No se encontró el bloque de búsqueda esperado')
+          if "item.postgrado && item.postgrado.toLowerCase().includes(term)" not in text:
+              pattern = re.compile(
+                  r"(?m)^(?P<i>\s*)\(item\.profesion\s*&&\s*item\.profesion\.toLowerCase\(\)\.includes\(term\)\);\s*$"
+              )
+              def repl_search(m):
+                  i = m.group('i')
+                  return (
+                      f"{i}(item.profesion && item.profesion.toLowerCase().includes(term)) ||\n"
+                      f"{i}(item.carrera && item.carrera.toLowerCase().includes(term)) ||\n"
+                      f"{i}(item.postgrado && item.postgrado.toLowerCase().includes(term));"
+                  )
+              text, n = pattern.subn(repl_search, text, count=1)
+              if n != 1:
+                  raise SystemExit('No se encontró la línea de búsqueda por profesión')
 
           path.write_text(text, encoding='utf-8')
           PY
