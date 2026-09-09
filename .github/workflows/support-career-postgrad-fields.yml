@@ -1,0 +1,74 @@
+name: Support Carrera and Postgrado fields
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/support-career-postgrad-fields.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Add Carrera/Postgrado compatibility
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+
+          old_normalize = """                    profesion: item.profesion || 'General',
+                    pais: item.pais || 'Desconocido',"""
+          new_normalize = """                    // Compatibilidad académica: acepta tanto el campo histórico `profesion`
+                    // como el campo canónico actual `carrera` proveniente del registro.
+                    profesion: item.profesion || item.carrera || 'General',
+                    carrera: item.carrera || item.profesion || '',
+                    postgrado: item.postgrado || '',
+                    pais: item.pais || 'Desconocido',"""
+          if old_normalize in text:
+              text = text.replace(old_normalize, new_normalize, 1)
+          elif "profesion: item.profesion || item.carrera || 'General'" not in text:
+              raise SystemExit('No se encontró el bloque de normalización esperado')
+
+          old_search = """                const matchTerm = (item.nombre && item.nombre.toLowerCase().includes(term)) || 
+                                  (item.profesion && item.profesion.toLowerCase().includes(term));"""
+          new_search = """                const matchTerm = (item.nombre && item.nombre.toLowerCase().includes(term)) || 
+                                  (item.profesion && item.profesion.toLowerCase().includes(term)) ||
+                                  (item.carrera && item.carrera.toLowerCase().includes(term)) ||
+                                  (item.postgrado && item.postgrado.toLowerCase().includes(term));"""
+          if old_search in text:
+              text = text.replace(old_search, new_search, 1)
+          elif "item.postgrado && item.postgrado.toLowerCase().includes(term)" not in text:
+              raise SystemExit('No se encontró el bloque de búsqueda esperado')
+
+          path.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Validate patch
+        run: |
+          set -euxo pipefail
+          grep -F "profesion: item.profesion || item.carrera || 'General'" index.html
+          grep -F "carrera: item.carrera || item.profesion || ''" index.html
+          grep -F "postgrado: item.postgrado || ''" index.html
+          grep -F "item.postgrado && item.postgrado.toLowerCase().includes(term)" index.html
+
+      - name: Commit changes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          if git diff --cached --quiet; then
+            echo 'No changes needed'
+            exit 0
+          fi
+          git commit -m 'Support Carrera and Postgrado fields in directory'
+          git push origin main
