@@ -514,10 +514,22 @@
                 console.error('Supabase JS no pudo inicializarse.');
                 return [];
             }
+
+            const PAGE_SIZE = 1000;
+            const activity = [];
+
             try {
-                const { data, error } = await supabaseClient.rpc('directorio_publico_actividad');
-                if (error) throw error;
-                return Array.isArray(data) ? data : [];
+                for (let from = 0; ; from += PAGE_SIZE) {
+                    const { data, error } = await supabaseClient
+                        .rpc('directorio_publico_actividad')
+                        .range(from, from + PAGE_SIZE - 1);
+
+                    if (error) throw error;
+                    const page = Array.isArray(data) ? data : [];
+                    activity.push(...page);
+                    if (page.length < PAGE_SIZE) break;
+                }
+                return activity;
             } catch (err) {
                 console.error('No fue posible cargar la actividad del ranking:', err);
                 return [];
