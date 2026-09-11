@@ -350,6 +350,33 @@
                     </div>
                 </div>
 
+                <!-- Actividad y ranking de Estudia -->
+                <div class="mb-5 rounded-2xl border border-teal-100 bg-gradient-to-br from-teal-50 to-white p-4 shadow-sm">
+                    <div class="flex items-center justify-between gap-3 mb-3">
+                        <div>
+                            <p class="text-[9px] font-extrabold uppercase tracking-[0.16em] text-brand">Actividad en Estudia</p>
+                            <p id="modalLevel" class="text-sm font-extrabold text-slate-800"></p>
+                        </div>
+                        <div class="text-right">
+                            <strong id="modalPoints" class="block text-2xl leading-none font-black text-brand"></strong>
+                            <span class="text-[9px] font-bold uppercase tracking-wider text-slate-400">Puntos XP</span>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="rounded-xl bg-white border border-slate-100 p-2.5 text-center">
+                            <strong id="modalPosition" class="block text-base font-black text-slate-800"></strong>
+                            <span class="text-[9px] font-bold uppercase text-slate-400">Posición</span>
+                        </div>
+                        <div class="rounded-xl bg-white border border-slate-100 p-2.5 text-center">
+                            <strong id="modalStudies" class="block text-base font-black text-slate-800"></strong>
+                            <span class="text-[9px] font-bold uppercase text-slate-400">Estudios</span>
+                        </div>
+                    </div>
+                    <a href="https://estudia.movidasst.com/#/mispuntos" class="mt-3 flex items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-white hover:bg-slate-900 transition-colors">
+                        Consultar mis puntos
+                    </a>
+                </div>
+
                 <!-- Botones de Acción (Estilo Tech) -->
                 <div class="grid grid-cols-3 gap-3 mb-2">
                     <!-- Email -->
@@ -391,11 +418,18 @@
     </a>
 
     <!-- SCRIPTS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
     <script>
+        const SUPABASE_URL = 'https://lfdmbkzghnwvsapxypvt.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_bRnkA6PA8-v073nrw9zxiQ_8rVGiOn1';
+        const supabaseClient = window.supabase?.createClient(SUPABASE_URL, SUPABASE_KEY, {
+            auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+        });
+
         const BASE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwAW5aTr0nD9K21AqiSlo9Ra2iSR8qN62ElA-J_VLSMiGT8P_vxsvl4nvCO77enmyu1Jg/exec';
         
-        const CACHE_KEY = 'movida_directory_data';
-        const CACHE_TIME_KEY = 'movida_directory_time';
+        const CACHE_KEY = 'movida_directory_data_v2';
+        const CACHE_TIME_KEY = 'movida_directory_time_v2';
         const CACHE_DURATION = 1000 * 60 * 30; // 30 minutos
 
         let allData = [];
@@ -434,8 +468,9 @@
             const now = new Date().getTime();
 
             if (cachedData && cachedTime && (now - cachedTime < CACHE_DURATION)) {
-                updateStatus("En línea");
-                finalizeDataLoad(JSON.parse(cachedData));
+                updateStatus("Conectando actividad...");
+                const activity = await loadRankingActivity();
+                finalizeDataLoad(JSON.parse(cachedData), activity);
             } else {
                 loadFromURL();
             }
@@ -453,7 +488,10 @@
             updateStatus("Conectando...");
             
             try {
-                const response = await fetch(`${BASE_SCRIPT_URL}?action=getDirectory`, { redirect: 'follow' });
+                const [response, activity] = await Promise.all([
+                    fetch(`${BASE_SCRIPT_URL}?action=getDirectory`, { redirect: 'follow' }),
+                    loadRankingActivity()
+                ]);
                 if (!response.ok) throw new Error(`HTTP: ${response.status}`);
                 
                 const json = await response.json();
@@ -463,7 +501,7 @@
                 localStorage.setItem(CACHE_KEY, JSON.stringify(data));
                 localStorage.setItem(CACHE_TIME_KEY, new Date().getTime());
 
-                finalizeDataLoad(data);
+                finalizeDataLoad(data, activity);
 
             } catch (err) {
                 console.error(err);
@@ -471,10 +509,29 @@
             }
         }
 
-        function finalizeDataLoad(data) {
-            processData(data);
+        async function loadRankingActivity() {
+            if (!supabaseClient) {
+                console.error('Supabase JS no pudo inicializarse.');
+                return [];
+            }
+            try {
+                const { data, error } = await supabaseClient.rpc('directorio_publico_actividad');
+                if (error) throw error;
+                return Array.isArray(data) ? data : [];
+            } catch (err) {
+                console.error('No fue posible cargar la actividad del ranking:', err);
+                return [];
+            }
+        }
+
+        function normalizeEmail(value) {
+            return String(value || '').trim().toLowerCase();
+        }
+
+        function finalizeDataLoad(data, activity = []) {
+            processData(data, activity);
             document.getElementById('loader').classList.add('hidden');
-            updateStatus("Activo");
+            updateStatus(activity.length ? "Activo · ranking conectado" : "Activo");
         }
 
         function updateStatus(msg) {
@@ -484,8 +541,15 @@
             if(sd) sd.className = "w-2 h-2 rounded-full bg-brand animate-pulse";
         }
 
-        function processData(data) {
+        function processData(data, activity = []) {
+            const activityByEmail = new Map(
+                activity
+                    .filter(row => normalizeEmail(row.correo))
+                    .map(row => [normalizeEmail(row.correo), row])
+            );
+
             allData = data.map((item, idx) => {
+                const ranking = activityByEmail.get(normalizeEmail(item.email)) || {};
                 let photo = item.foto_url || "";
                 if (photo.includes('drive.google.com')) {
                     const match = photo.match(/(?:id=|\/d\/)([a-zA-Z0-9_-]+)/);
@@ -505,7 +569,12 @@
                     email: String(item.email || ''),
                     whatsapp: String(item.whatsapp || ''),
                     linkedin: String(item.linkedin || ''),
-                    status: item.status || 'Inactivo'
+                    status: item.status || 'Inactivo',
+                    puntos: Number(ranking.puntos || 0),
+                    nivel: ranking.nivel || 'Participante',
+                    nivel_icono: ranking.nivel_icono || '🥉',
+                    posicion_actividad: ranking.posicion_actividad || null,
+                    estudios_participados: Number(ranking.estudios_participados || 0)
                 };
             });
             updateDropdowns();
@@ -606,6 +675,11 @@
                 }
 
                 card.innerHTML = `
+                    <div class="absolute top-3 left-3">
+                        <span class="px-2 py-1 rounded-lg text-[9px] font-extrabold bg-teal-50 text-brand border border-teal-100 shadow-sm">
+                            ${user.nivel_icono} ${user.puntos.toLocaleString('es-ES')} XP
+                        </span>
+                    </div>
                     <div class="absolute top-3 right-3">
                         <span class="px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider border ${statusColor}">
                             ${user.status || 'N/A'}
@@ -636,6 +710,10 @@
             document.getElementById('modalName').textContent = user.nombre;
             document.getElementById('modalProfession').textContent = user.profesion;
             document.getElementById('modalLocation').textContent = [user.estado, user.pais].filter(Boolean).join(', ');
+            document.getElementById('modalLevel').textContent = `${user.nivel_icono} ${user.nivel}`;
+            document.getElementById('modalPoints').textContent = user.puntos.toLocaleString('es-ES');
+            document.getElementById('modalPosition').textContent = user.posicion_actividad ? `#${user.posicion_actividad}` : '—';
+            document.getElementById('modalStudies').textContent = user.estudios_participados.toLocaleString('es-ES');
 
             // Status dinámico en Modal
             const statusEl = document.getElementById('modalStatus');
